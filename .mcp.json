@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "catatan-keuangan": {
+      "url": "http://localhost:8081/mcp",
+      "headers": {
+        "Authorization": "Bearer a"
+      }
+    }
+  }
+}
