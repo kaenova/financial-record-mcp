@@ -47,12 +47,9 @@ export class GoogleSheetsRepository {
     );
     logger.info("Record added", { rowNumber, type: input.TipeCatatan });
 
-    // Re-read the row to return it
-    const rowIndex = rowNumber; // 1-indexed
-    const data = await this.client.getRows(
-      `A${rowIndex}:${COLUMN_COUNT === 20 ? "T" : "S"}${rowIndex}`,
-    );
-    const record = data.length > 0 ? rowToRecord(data[0]) : {};
+    // Return the record from the built row — no need to re-read since
+    // appendRow already wrote it correctly.
+    const record = rowToRecord(row);
 
     return { rowNumber, updatedRange, record };
   }
