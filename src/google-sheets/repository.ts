@@ -122,8 +122,8 @@ export class GoogleSheetsRepository {
     while (merged.length < COLUMN_COUNT) merged.push("");
 
     // Updated indices after +1 shift for the new Index column
+    // NOTE: Index (column A) is NOT in this map — it should never be written by update_record.
     const fieldToIndex: Record<string, number> = {
-      Index: 0,
       Timestamp: 1,
       "Email Address": 2,
       Tanggal: 3,
