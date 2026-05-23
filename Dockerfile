@@ -14,9 +14,10 @@ RUN bun build ./src/index.ts --target=bun --outdir=./dist
 FROM oven/bun:1-slim
 WORKDIR /app
 
-# Copy built artifacts and package.json (for process info)
+# Copy built artifacts, package info, and bundled knowledge file
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
+COPY --from=build /app/src/google-sheets/google-query-language.md.txt ./dist/google-sheets/
 
 # Default port
 EXPOSE 8080

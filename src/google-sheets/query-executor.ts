@@ -110,14 +110,14 @@ export class QueryExecutor {
    * Get the sheet schema: column letters, headers, inferred types, and sample values.
    */
   async getSchema(): Promise<SchemaResult> {
-    // Read header row and some data rows
-    const headerValues = await this.client.getRows(`A1:S1`);
-    const dataValues = await this.client.getRows(`A2:S10`);
+    // Read header row and some data rows (now A:T instead of A:S)
+    const headerValues = await this.client.getRows(`A1:T1`);
+    const dataValues = await this.client.getRows(`A2:T10`);
 
     const headers = headerValues.length > 0 ? headerValues[0] : [];
 
     // Get total row count
-    const allData = await this.client.getRows(`A2:S`);
+    const allData = await this.client.getRows(`A2:T`);
     const totalRows = allData.length;
 
     const columns: ColumnMeta[] = COLUMN_LETTERS.map((letter, idx) => {

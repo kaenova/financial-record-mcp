@@ -5,6 +5,7 @@ import {
   buildRow,
   rowToRecord,
   RecordInput,
+  COLUMN_COUNT,
 } from "./types";
 import { notFoundError } from "../utils/errors";
 import { logger } from "../utils/logger";
@@ -49,7 +50,7 @@ export class GoogleSheetsRepository {
     // Re-read the row to return it
     const rowIndex = rowNumber; // 1-indexed
     const data = await this.client.getRows(
-      `A${rowIndex}:S${rowIndex}`,
+      `A${rowIndex}:${COLUMN_COUNT === 20 ? "T" : "S"}${rowIndex}`,
     );
     const record = data.length > 0 ? rowToRecord(data[0]) : {};
 
@@ -57,7 +58,7 @@ export class GoogleSheetsRepository {
   }
 
   /**
-   * Update an existing record by row number (0-based, excluding header).
+   * Update an existing record by row number (0-based, excluding header and index rows).
    * Merges partial fields over existing values.
    * Returns the updated record.
    */
@@ -69,7 +70,7 @@ export class GoogleSheetsRepository {
 
     // Fetch current row
     const data = await this.client.getRows(
-      `A${sheetRowIndex + 1}:S${sheetRowIndex + 1}`,
+      `A${sheetRowIndex + 1}:${COLUMN_COUNT === 20 ? "T" : "S"}${sheetRowIndex + 1}`,
     );
     if (data.length === 0) {
       throw notFoundError(rowNumber, 0);
@@ -80,7 +81,7 @@ export class GoogleSheetsRepository {
     const mergedRow = this.mergeFields(currentRow, partialFields);
 
     // Update the row
-    const range = `A${sheetRowIndex + 1}:S${sheetRowIndex + 1}`;
+    const range = `A${sheetRowIndex + 1}:${COLUMN_COUNT === 20 ? "T" : "S"}${sheetRowIndex + 1}`;
     await this.client.updateRow(range, mergedRow);
 
     logger.info("Record updated", { rowNumber });
@@ -93,7 +94,7 @@ export class GoogleSheetsRepository {
   }
 
   /**
-   * Delete a record by row number (0-based, excluding header).
+   * Delete a record by row number (0-based, excluding header and index rows).
    */
   async deleteRecord(rowNumber: number): Promise<DeleteRecordResult> {
     const mainSheetId = await this.client.getMainSheetId();
@@ -118,27 +119,30 @@ export class GoogleSheetsRepository {
     const merged = [...currentRow];
 
     // Pad if needed
-    while (merged.length < 19) merged.push("");
+    while (merged.length < COLUMN_COUNT) merged.push("");
 
+    // Updated indices after +1 shift for the new Index column
     const fieldToIndex: Record<string, number> = {
-      Timestamp: 0,
-      "Email Address": 1,
-      Tanggal: 2,
-      "Tipe Catatan": 3,
-      "Jenis Pengeluaran": 4,
-      "Metode Pengeluaran": 5,
-      "Jumlah Pengeluaran": 6,
-      "Deskripsi Pengeluaran": 7,
-      "Dokumen Pendukung (Pengeluaran)": 8,
-      "Metode Pemasukan": 9,
-      "Jumlah Pemasukan": 10,
-      "Deskripsi Pemasukan": 11,
-      "Dokumen Pendukung (Pemasukan)": 12,
-      Dari: 13,
-      Ke: 14,
-      "Jumlah Pemindahan Dana": 16,
-      "Dokumen Pendukung (Pemindahan Dana)": 17,
-      "Biaya Admin": 18,
+      Index: 0,
+      Timestamp: 1,
+      "Email Address": 2,
+      Tanggal: 3,
+      "Tipe Catatan": 4,
+      "Jenis Pengeluaran": 5,
+      "Metode Pengeluaran": 6,
+      "Jumlah Pengeluaran": 7,
+      "Deskripsi Pengeluaran": 8,
+      "Dokumen Pendukung (Pengeluaran)": 9,
+      "Metode Pemasukan": 10,
+      "Jumlah Pemasukan": 11,
+      "Deskripsi Pemasukan": 12,
+      "Dokumen Pendukung (Pemasukan)": 13,
+      Dari: 14,
+      Ke: 15,
+      "Ke (duplicate)": 16,
+      "Jumlah Pemindahan Dana": 17,
+      "Dokumen Pendukung (Pemindahan Dana)": 18,
+      "Biaya Admin": 19,
     };
 
     for (const [key, value] of Object.entries(partialFields)) {

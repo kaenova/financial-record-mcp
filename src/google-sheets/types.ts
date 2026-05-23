@@ -54,12 +54,14 @@ export interface ColumnMeta {
 }
 
 // ---- Column Letters & Headers ----
+// Column A is now the Index column; all other columns shift +1.
 export const COLUMN_LETTERS = [
   "A", "B", "C", "D", "E", "F", "G", "H", "I",
-  "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
+  "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
 ] as const;
 
 export const COLUMN_HEADERS = [
+  "Index",
   "Timestamp",
   "Email Address",
   "Tanggal",
@@ -81,68 +83,73 @@ export const COLUMN_HEADERS = [
   "Biaya Admin",
 ] as const;
 
-export const RANGE_ALL = "A:S";
+export const RANGE_ALL = "A:T";
 export const HEADER_ROW = 1;
+export const COLUMN_COUNT = 20;
 
 // ---- Row builders ----
 
 /**
- * Build a row array from a Pengeluaran input, aligned to the 19-column layout.
- * Columns: A(1)=Timestamp, B(2)=Email, C(3)=Tanggal, D(4)=Tipe, E(5)=Jenis Pengeluaran,
- * F(6)=Metode Pengeluaran, G(7)=Jumlah Pengeluaran, H(8)=Deskripsi Pengeluaran,
- * I(9)=Dokumen Pendukung (Pengeluaran), rest empty.
+ * Build a row array from a Pengeluaran input, aligned to the 20-column layout.
+ * Columns: A(0)=Index, B(1)=Timestamp, C(2)=Email, D(3)=Tanggal, E(4)=Tipe,
+ * F(5)=Jenis Pengeluaran, G(6)=Metode Pengeluaran, H(7)=Jumlah Pengeluaran,
+ * I(8)=Deskripsi Pengeluaran, J(9)=Dokumen Pendukung (Pengeluaran), rest empty.
  */
 export function buildPengeluaranRow(input: z.infer<typeof PengeluaranInputSchema>): string[] {
-  const row = new Array(19).fill("");
+  const row = new Array(COLUMN_COUNT).fill("");
   const now = new Date();
-  row[0] = now.toLocaleString("en-US");                   // A: Timestamp
-  row[1] = "";                                          // B: Email
-  row[2] = input.Tanggal ?? now.toLocaleDateString("en-US"); // C: Tanggal
-  row[3] = "Pengeluaran";                               // D: Tipe Catatan
-  row[4] = input.JenisPengeluaran;                      // E
-  row[5] = input.MetodePengeluaran;                     // F
-  row[6] = input.JumlahPengeluaran;                     // G
-  row[7] = input.DeskripsiPengeluaran ?? "";            // H
-  row[8] = input.DokumenPendukung ?? "";                // I
+  row[0] = "";                                              // A: Index (auto-managed by sheet)
+  row[1] = now.toLocaleString("en-US");                     // B: Timestamp
+  row[2] = "";                                            // C: Email
+  row[3] = input.Tanggal ?? now.toLocaleDateString("en-US"); // D: Tanggal
+  row[4] = "Pengeluaran";                                   // E: Tipe Catatan
+  row[5] = input.JenisPengeluaran;                          // F
+  row[6] = input.MetodePengeluaran;                         // G
+  row[7] = input.JumlahPengeluaran;                         // H
+  row[8] = input.DeskripsiPengeluaran ?? "";                // I
+  row[9] = input.DokumenPendukung ?? "";                    // J
   return row;
 }
 
 /**
  * Build a row array from a Pemasukan input.
- * Columns: A(1)=Timestamp, B(2)=Email, C(3)=Tanggal, D(4)=Tipe, J(10)=Metode Pemasukan,
- * K(11)=Jumlah Pemasukan, L(12)=Deskripsi Pemasukan, M(13)=Dokumen Pendukung, rest empty.
+ * Columns: A(0)=Index, B(1)=Timestamp, C(2)=Email, D(3)=Tanggal, E(4)=Tipe,
+ * K(10)=Metode Pemasukan, L(11)=Jumlah Pemasukan, M(12)=Deskripsi Pemasukan,
+ * N(13)=Dokumen Pendukung, rest empty.
  */
 export function buildPemasukanRow(input: z.infer<typeof PemasukanInputSchema>): string[] {
-  const row = new Array(19).fill("");
+  const row = new Array(COLUMN_COUNT).fill("");
   const now = new Date();
-  row[0] = now.toLocaleString("en-US");
-  row[1] = "";
-  row[2] = input.Tanggal ?? now.toLocaleDateString("en-US");
-  row[3] = "Pemasukan";
-  row[9] = input.MetodePemasukan;                       // J
-  row[10] = input.JumlahPemasukan;                      // K
-  row[11] = input.DeskripsiPemasukan ?? "";             // L
-  row[12] = input.DokumenPendukung ?? "";               // M
+  row[0] = "";                                              // A: Index
+  row[1] = now.toLocaleString("en-US");                     // B: Timestamp
+  row[2] = "";                                            // C: Email
+  row[3] = input.Tanggal ?? now.toLocaleDateString("en-US"); // D: Tanggal
+  row[4] = "Pemasukan";                                     // E: Tipe Catatan
+  row[10] = input.MetodePemasukan;                          // K
+  row[11] = input.JumlahPemasukan;                          // L
+  row[12] = input.DeskripsiPemasukan ?? "";                 // M
+  row[13] = input.DokumenPendukung ?? "";                   // N
   return row;
 }
 
 /**
  * Build a row array from a Pemindahan Dana input.
- * Columns: A(1)=Timestamp, B(2)=Email, C(3)=Tanggal, D(4)=Tipe, N(14)=Dari,
- * O(15)=Ke, Q(17)=Jumlah Pemindahan Dana, R(18)=Dokumen, S(19)=Biaya Admin.
+ * Columns: A(0)=Index, B(1)=Timestamp, C(2)=Email, D(3)=Tanggal, E(4)=Tipe,
+ * O(14)=Dari, P(15)=Ke, R(17)=Jumlah Pemindahan Dana, S(18)=Dokumen, T(19)=Biaya Admin.
  */
 export function buildPemindahanDanaRow(input: z.infer<typeof PemindahanDanaInputSchema>): string[] {
-  const row = new Array(19).fill("");
+  const row = new Array(COLUMN_COUNT).fill("");
   const now = new Date();
-  row[0] = now.toLocaleString("en-US");
-  row[1] = "";
-  row[2] = input.Tanggal ?? now.toLocaleDateString("en-US");
-  row[3] = "Pemindahan Dana";
-  row[13] = input.Dari;                                 // N
-  row[14] = input.Ke;                                   // O
-  row[16] = input.JumlahPemindahanDana;                 // Q
-  row[17] = input.DokumenPendukung ?? "";               // R
-  row[18] = input.BiayaAdmin ?? "";                     // S
+  row[0] = "";                                              // A: Index
+  row[1] = now.toLocaleString("en-US");                     // B: Timestamp
+  row[2] = "";                                            // C: Email
+  row[3] = input.Tanggal ?? now.toLocaleDateString("en-US"); // D: Tanggal
+  row[4] = "Pemindahan Dana";                               // E: Tipe Catatan
+  row[14] = input.Dari;                                     // O
+  row[15] = input.Ke;                                       // P
+  row[17] = input.JumlahPemindahanDana;                     // R
+  row[18] = input.DokumenPendukung ?? "";                   // S
+  row[19] = input.BiayaAdmin ?? "";                         // T
   return row;
 }
 
@@ -158,10 +165,10 @@ export function buildRow(input: RecordInput): string[] {
   }
 }
 
-/** Convert a raw row array (string[19]) to a labeled record for display. */
+/** Convert a raw row array (string[20]) to a labeled record for display. */
 export function rowToRecord(row: string[]): Record<string, string> {
   const labels = [
-    "Timestamp", "Email Address", "Tanggal", "Tipe Catatan",
+    "Index", "Timestamp", "Email Address", "Tanggal", "Tipe Catatan",
     "Jenis Pengeluaran", "Metode Pengeluaran", "Jumlah Pengeluaran",
     "Deskripsi Pengeluaran", "Dokumen Pendukung (Pengeluaran)",
     "Metode Pemasukan", "Jumlah Pemasukan", "Deskripsi Pemasukan",

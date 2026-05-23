@@ -10,6 +10,7 @@ import {
   COLUMN_HEADERS,
 } from "./google-sheets/types";
 import { logger } from "./utils/logger";
+import { getGoogleQueryKnowledge } from "./utils/query-knowledge";
 
 /**
  * Schema adapter: converts a Zod v4 schema (implementing StandardSchemaWithJSONProps)
@@ -42,9 +43,9 @@ export function registerTools(
   // ---- Tool 1: get_sheet_schema ----
   mcp.tool("get_sheet_schema", {
     description:
-      "Get the schema of the financial sheet: column letters (A-S), header names, " +
-      "inferred data types, and sample values. Use this to understand column letters " +
-      "for constructing Google Query Language queries.",
+      "Get the schema of the financial sheet: column letters (A-T), header names, " +
+      "inferred data types, and sample values. Column A is the Index column. " +
+      "Use this to understand column letters for constructing Google Query Language queries.",
     annotations: { readOnlyHint: true },
     handler: async () => {
       const schema = await queryExecutor.getSchema();
@@ -65,22 +66,45 @@ export function registerTools(
     },
   });
 
-  // ---- Tool 2: execute_query ----
+  // ---- Tool 2: get_query_knowledge ----
+  mcp.tool("get_query_knowledge", {
+    description:
+      "Get the full Google Query Language reference documentation. " +
+      "Always call this tool first before writing or troubleshooting a query with execute_query. " +
+      "Returns the complete Query Language spec as a text string.",
+    annotations: { readOnlyHint: true },
+    handler: async () => {
+      const knowledge = getGoogleQueryKnowledge();
+      const text =
+        "📚 Google Query Language Reference\n" +
+        "====================================\n\n" +
+        knowledge;
+
+      return {
+        content: [{ type: "text", text }],
+      };
+    },
+  });
+
+  // ---- Tool 3: execute_query ----
   const ExecuteQueryInputSchema = z.object({
     query: z
       .string()
       .describe(
-        "Google Query Language query string. Use column letters (A-S), not header names. " +
-          "Example: `select C, D, E, G where D = 'Pengeluaran' and G > 100000 order by C desc limit 10`. " +
-          "See get_sheet_schema for column letter mappings.",
+        "Google Query Language query string. Use column letters (B-T), not header names. " +
+          "Column A is the Index column and is available for selection. " +
+          "Example: `select B, D, E, G where E = 'Pengeluaran' and G > 100000 order by D desc limit 10`. " +
+          "Always call get_sheet_schema for the latest column mappings, and call get_query_knowledge " +
+          "at the very first step if you are unsure about query syntax.",
       ),
   });
 
   mcp.tool("execute_query", {
     description:
       "Execute a Google Query Language (SQL-like) query against the financial sheet. " +
-      "Uses column letters (A-S), not header names. Call get_sheet_schema first to " +
-      "understand the column structure.",
+      "Uses column letters (B-T, where A is the Index column), not header names. " +
+      "Call get_sheet_schema first to understand the column structure, and call " +
+      "get_query_knowledge first if you need syntax help.",
     inputSchema: ExecuteQueryInputSchema,
     annotations: { readOnlyHint: true },
     handler: async (args: { query: string }) => {
@@ -91,7 +115,8 @@ export function registerTools(
           content: [
             {
               type: "text",
-              text: `❌ Query error:\n${result.error ?? "Unknown error"}`,
+              text: `❌ Query error:\n${result.error ?? "Unknown error"}\n\n` +
+                `💡 Tip: Call get_query_knowledge if you need help with Google Query Language syntax.`,
             },
           ],
           structuredContent: result,
@@ -117,7 +142,7 @@ export function registerTools(
     },
   });
 
-  // ---- Tool 3: add_record ----
+  // ---- Tool 4: add_record ----
   mcp.tool("add_record", {
     description:
       "Add a new financial record (Pengeluaran/Pemasukan/Pemindahan Dana). " +

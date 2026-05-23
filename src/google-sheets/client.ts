@@ -51,7 +51,7 @@ export class GoogleSheetsClient {
       requestBody: { values: [values] },
     });
     const updatedRange = res.data.updates?.updatedRange ?? "";
-    // Parse the row number from the updated range (e.g., "Sheet1!A4:Z4" -> 4)
+    // Parse the row number from the updated range (e.g., "Sheet1!A4:T4" -> 4)
     const match = updatedRange.match(/\d+/);
     const rowNumber = match ? parseInt(match[0], 10) : 0;
     return { updatedRange, rowNumber };
