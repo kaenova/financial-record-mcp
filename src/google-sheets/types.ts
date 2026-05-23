@@ -95,9 +95,9 @@ export const HEADER_ROW = 1;
 export function buildPengeluaranRow(input: z.infer<typeof PengeluaranInputSchema>): string[] {
   const row = new Array(19).fill("");
   const now = new Date();
-  row[0] = now.toISOString();                          // A: Timestamp
+  row[0] = now.toLocaleString("en-US");                   // A: Timestamp
   row[1] = "";                                          // B: Email
-  row[2] = input.Tanggal ?? now.toLocaleDateString("id-ID"); // C: Tanggal
+  row[2] = input.Tanggal ?? now.toLocaleDateString("en-US"); // C: Tanggal
   row[3] = "Pengeluaran";                               // D: Tipe Catatan
   row[4] = input.JenisPengeluaran;                      // E
   row[5] = input.MetodePengeluaran;                     // F
@@ -115,9 +115,9 @@ export function buildPengeluaranRow(input: z.infer<typeof PengeluaranInputSchema
 export function buildPemasukanRow(input: z.infer<typeof PemasukanInputSchema>): string[] {
   const row = new Array(19).fill("");
   const now = new Date();
-  row[0] = now.toISOString();
+  row[0] = now.toLocaleString("en-US");
   row[1] = "";
-  row[2] = input.Tanggal ?? now.toLocaleDateString("id-ID");
+  row[2] = input.Tanggal ?? now.toLocaleDateString("en-US");
   row[3] = "Pemasukan";
   row[9] = input.MetodePemasukan;                       // J
   row[10] = input.JumlahPemasukan;                      // K
@@ -134,9 +134,9 @@ export function buildPemasukanRow(input: z.infer<typeof PemasukanInputSchema>): 
 export function buildPemindahanDanaRow(input: z.infer<typeof PemindahanDanaInputSchema>): string[] {
   const row = new Array(19).fill("");
   const now = new Date();
-  row[0] = now.toISOString();
+  row[0] = now.toLocaleString("en-US");
   row[1] = "";
-  row[2] = input.Tanggal ?? now.toLocaleDateString("id-ID");
+  row[2] = input.Tanggal ?? now.toLocaleDateString("en-US");
   row[3] = "Pemindahan Dana";
   row[13] = input.Dari;                                 // N
   row[14] = input.Ke;                                   // O
