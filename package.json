@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run build && bun run start",
+    "dev": "bun run start",
     "build": "xmcp build && bun build ./src/index.ts --target=bun --outdir=./dist",
-    "start": "bun run ./dist/index.js",
+    "start": "xmcp build && bun run ./src/index.ts",
     "docker:build": "docker build -t catatan-keuangan-mcp .",
     "docker:run": "docker compose up"
   },

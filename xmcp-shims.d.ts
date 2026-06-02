@@ -6,7 +6,7 @@ declare module "@xmcp/adapter" {
     reply: FastifyReply,
   ): Promise<void>;
 
-  // xmcp adapter may also export the handler as default (bundler interop).
+  // Some bundlers may expose the handler as default export.
   const xmcpAdapter: any;
   export default xmcpAdapter;
 }
