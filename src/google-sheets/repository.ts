@@ -11,13 +11,13 @@ import { notFoundError } from "../utils/errors";
 import { logger } from "../utils/logger";
 
 export interface AddRecordResult {
-  rowNumber: number;
+  sheetIndexNumber: number;
   updatedRange: string;
   record: Record<string, string>;
 }
 
 export interface UpdateRecordResult {
-  rowNumber: number;
+  sheetIndexNumber: number;
   updatedRange: string;
   record: Record<string, string>;
 }
@@ -37,57 +37,59 @@ export class GoogleSheetsRepository {
   }
 
   /**
-   * Add a new record. Returns the row number (1-indexed, including header).
+   * Add a new record. Returns the sheet row number (1-indexed, including header).
    */
   async addRecord(input: RecordInput): Promise<AddRecordResult> {
     const row = buildRow(input);
-    const { updatedRange, rowNumber } = await this.client.appendRow(
+    const { updatedRange, sheetIndexNumber } = await this.client.appendRow(
       RANGE_ALL,
       row,
     );
-    logger.info("Record added", { rowNumber, type: input.TipeCatatan });
+    logger.info("Record added", { sheetIndexNumber, type: input.TipeCatatan });
 
     // Return the record from the built row — no need to re-read since
     // appendRow already wrote it correctly.
     const record = rowToRecord(row);
 
-    return { rowNumber, updatedRange, record };
+    return { sheetIndexNumber, updatedRange, record };
   }
 
   /**
-   * Update an existing record by row number (0-based, excluding header and index rows).
+   * Update an existing record by sheet row number (1-indexed, including header).
    * Merges partial fields over existing values.
    * Returns the updated record.
    */
   async updateRecord(
-    rowNumber: number,
+    sheetIndexNumber: number,
     partialFields: Record<string, string>,
   ): Promise<UpdateRecordResult> {
-    const sheetRowIndex = rowNumber + 1; // 0-based -> 1-indexed
-
     // Fetch current row
     const data = await this.client.getRows(
-      `A${sheetRowIndex + 1}:${COLUMN_COUNT === 20 ? "T" : "S"}${sheetRowIndex + 1}`,
+      `A${sheetIndexNumber}:${COLUMN_COUNT === 20 ? "T" : "S"}${sheetIndexNumber}`,
     );
     if (data.length === 0) {
-      throw notFoundError(rowNumber, 0);
+      throw notFoundError(sheetIndexNumber, 0);
     }
 
     const currentRow = data[0];
     if (!currentRow) {
-      throw notFoundError(rowNumber, 0);
+      throw notFoundError(sheetIndexNumber, 0);
     }
     // Map field names to column indices and merge
     const mergedRow = this.mergeFields(currentRow, partialFields);
 
-    // Update the row
-    const range = `A${sheetRowIndex + 1}:${COLUMN_COUNT === 20 ? "T" : "S"}${sheetRowIndex + 1}`;
-    await this.client.updateRow(range, mergedRow);
+    // Update only columns B onward. Column A is auto-filled elsewhere and must not
+    // be overwritten during manual updates.
+    const endColumn = COLUMN_COUNT === 20 ? "T" : "S";
+    const range = `B${sheetIndexNumber}:${endColumn}${sheetIndexNumber}`;
 
-    logger.info("Record updated", { rowNumber });
+    // Skip the first column when writing the update payload.
+    await this.client.updateRow(range, mergedRow.slice(1));
+
+    logger.info("Record updated", { sheetIndexNumber });
 
     return {
-      rowNumber,
+      sheetIndexNumber,
       updatedRange: `${this.sheetName}!${range}`,
       record: rowToRecord(mergedRow),
     };

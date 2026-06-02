@@ -4,12 +4,13 @@ import { getDomainServices } from "../xmcp/shared";
 import { toolErrorResponse } from "../xmcp/tool-error";
 
 export const schema = {
-  rowNumber: z
+  sheetIndexNumber: z
     .number()
     .int()
     .nonnegative()
     .describe(
-      "0-based row number (excluding header). Get this from query results.",
+      "The sheet index number of the row you want to change. You can Query on A columns for the index number. " +
+        "The sheet index is including table header on row 1."
     ),
   fields: z
     .record(z.string(), z.string())
@@ -37,12 +38,12 @@ export default async function updateRecord(
     const { repository } = await getDomainServices();
 
     const result = await repository.updateRecord(
-      args.rowNumber,
+      args.sheetIndexNumber,
       args.fields,
     );
 
     const text =
-      `✅ Record updated (row ${result.rowNumber})\n` +
+      `✅ Record updated (sheet row ${result.sheetIndexNumber})\n` +
       Object.entries(result.record)
         .map(([k, v]) => `  ${k}: ${v}`)
         .join("\n");

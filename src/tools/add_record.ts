@@ -59,7 +59,7 @@ export default async function addRecord(
 
     const result = await repository.addRecord(input);
     const text =
-      `✅ Record added (row ${result.rowNumber})\n` +
+      `✅ Record added (sheet row ${result.sheetIndexNumber})\n` +
       Object.entries(result.record)
         .map(([k, v]) => `  ${k}: ${v}`)
         .join("\n");

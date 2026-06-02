@@ -42,8 +42,11 @@ export class GoogleSheetsClient {
     return res.data.values ?? [];
   }
 
-  /** Append a row and return the updated range + new row number (1-indexed). */
-  async appendRow(range: string, values: string[]): Promise<{ updatedRange: string; rowNumber: number }> {
+  /** Append a row and return the updated range + sheet index number (1-indexed). */
+  async appendRow(
+    range: string,
+    values: string[],
+  ): Promise<{ updatedRange: string; sheetIndexNumber: number }> {
     const res = await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.sheetId,
       range: `${this.sheetName}!${range}`,
@@ -54,8 +57,8 @@ export class GoogleSheetsClient {
     const updatedRange = res.data.updates?.updatedRange ?? "";
     // Parse the row number from the updated range (e.g., "Sheet1!A4:T4" -> 4)
     const match = updatedRange.match(/\d+/);
-    const rowNumber = match ? parseInt(match[0], 10) : 0;
-    return { updatedRange, rowNumber };
+    const sheetIndexNumber = match ? parseInt(match[0], 10) : 0;
+    return { updatedRange, sheetIndexNumber };
   }
 
   /** Update an existing row. */
