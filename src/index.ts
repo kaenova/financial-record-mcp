@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { xmcpHandler } from "@xmcp/adapter";
+import xmcpAdapter from "@xmcp/adapter";
 import { config } from "./config";
 import { createGoogleSheetsClient } from "./google-sheets/client";
 import { createQueryExecutor } from "./google-sheets/query-executor";
@@ -53,7 +53,15 @@ async function main() {
   createQueryExecutor(sheetsClient, config);
   createRepository(sheetsClient, config.GOOGLE_SHEET_NAME);
 
-  // 3) Fastify server
+  // 3) Fastify server + xmcp handler
+  const handler = (xmcpAdapter as any)?.xmcpHandler ?? xmcpAdapter;
+  if (typeof handler !== "function") {
+    logger.error("xmcpHandler is not a function", {
+      handlerType: typeof handler,
+    });
+    throw new Error("xmcpHandler missing/invalid");
+  }
+
   const app = Fastify({ logger: false });
 
   // Health check endpoint (no auth required)
@@ -75,8 +83,8 @@ async function main() {
   };
 
   // xmcp MCP endpoint
-  app.get("/mcp", { preHandler: mcpAuthGuard }, xmcpHandler as any);
-  app.post("/mcp", { preHandler: mcpAuthGuard }, xmcpHandler as any);
+  app.get("/mcp", { preHandler: mcpAuthGuard }, handler as any);
+  app.post("/mcp", { preHandler: mcpAuthGuard }, handler as any);
 
   await app.listen({ port: config.PORT, host: config.HOST });
 
