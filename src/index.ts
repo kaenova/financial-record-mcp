@@ -1,11 +1,33 @@
-import { Hono } from "hono";
-import { McpServer, StreamableHttpTransport } from "mcp-lite";
+import Fastify from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import { xmcpHandler } from "@xmcp/adapter";
 import { config } from "./config";
 import { createGoogleSheetsClient } from "./google-sheets/client";
 import { createQueryExecutor } from "./google-sheets/query-executor";
 import { createRepository } from "./google-sheets/repository";
-import { registerTools, schemaAdapter } from "./mcp-server";
 import { logger } from "./utils/logger";
+
+const AUTH_ERROR = {
+  jsonrpc: "2.0",
+  error: { code: -32000, message: "Unauthorized: invalid or missing API key" },
+};
+
+function extractProvidedKey(request: FastifyRequest) {
+  const authHeader = request.headers.authorization;
+  const apiKeyHeader = request.headers["x-api-key"];
+
+  // Accept: Authorization: Bearer <key>
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+
+  // Accept: x-api-key: <key>
+  if (typeof apiKeyHeader === "string" && apiKeyHeader.length > 0) {
+    return apiKeyHeader;
+  }
+
+  return undefined;
+}
 
 async function main() {
   logger.info("Starting Catatan Keuangan MCP Server...");
@@ -16,7 +38,7 @@ async function main() {
     port: config.PORT,
   });
 
-  // 1. Create Google Sheets client & verify auth
+  // 1) Create Google Sheets client & verify auth (fail-fast)
   const sheetsClient = createGoogleSheetsClient(config);
   try {
     await sheetsClient.checkAuth();
@@ -26,82 +48,43 @@ async function main() {
     process.exit(1);
   }
 
-  // 2. Create query executor and repository
-  const queryExecutor = createQueryExecutor(sheetsClient, config);
-  const repository = createRepository(sheetsClient, config.GOOGLE_SHEET_NAME);
+  // 2) Warm singleton domain services so tool calls start fast
+  // (They are cached internally, so calling factories repeatedly is safe.)
+  createQueryExecutor(sheetsClient, config);
+  createRepository(sheetsClient, config.GOOGLE_SHEET_NAME);
 
-  // 3. Create McpServer instance
-  const mcp = new McpServer({
-    name: "catatan-keuangan-mcp",
-    version: "1.0.0",
-    schemaAdapter,
-    logger: {
-      error: (msg: string, ...args: unknown[]) => logger.error(msg, ...args),
-      warn: (msg: string, ...args: unknown[]) => logger.warn(msg, ...args),
-      info: (msg: string, ...args: unknown[]) => logger.info(msg, ...args),
-      debug: (msg: string, ...args: unknown[]) => logger.debug(msg, ...args),
-    },
-  });
-
-  // 4. Register all tools
-  registerTools(mcp, sheetsClient, queryExecutor, repository);
-
-  // 5. Bind to transport
-  const transport = new StreamableHttpTransport();
-  const handler = transport.bind(mcp);
-
-  // 6. Mount on Hono with auth middleware
-  const app = new Hono();
-
-  // ---- Authentication Middleware ----
-  // Checks every incoming request for a valid MCP_KEY via:
-  //   - Authorization: Bearer <key>
-  //   - x-api-key: <key>
-  // Returns 401 if missing or invalid.
-  app.use("/mcp/*", async (c, next) => {
-    const authHeader = c.req.header("Authorization");
-    const apiKeyHeader = c.req.header("x-api-key");
-
-    let providedKey: string | undefined;
-    if (authHeader?.startsWith("Bearer ")) {
-      providedKey = authHeader.slice(7);
-    } else if (apiKeyHeader) {
-      providedKey = apiKeyHeader;
-    }
-
-    if (!providedKey || providedKey !== config.MCP_KEY) {
-      return c.json(
-        {
-          jsonrpc: "2.0",
-          error: { code: -32000, message: "Unauthorized: invalid or missing API key" },
-        },
-        401,
-      );
-    }
-
-    await next();
-  });
-
-  app.all("/mcp", async (c) => {
-    const response = await handler(c.req.raw);
-    return response;
-  });
+  // 3) Fastify server
+  const app = Fastify({ logger: false });
 
   // Health check endpoint (no auth required)
-  app.get("/health", (c) => {
-    return c.json({ status: "ok", server: "catatan-keuangan-mcp", version: "1.0.0" });
+  app.get("/health", async () => {
+    return { status: "ok", server: "catatan-keuangan-mcp", version: "1.0.0" };
   });
 
-  // 7. Start server
-  Bun.serve({
-    fetch: app.fetch,
-    port: config.PORT,
-    hostname: config.HOST,
-  });
+  // Auth guard for /mcp
+  const mcpAuthGuard = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ) => {
+    const providedKey = extractProvidedKey(request);
 
-  console.log(`🚀 Catatan Keuangan MCP Server running on http://${config.HOST}:${config.PORT}/mcp`);
-  console.log(`🔒 Authentication: ${config.MCP_KEY ? "enabled" : "MCP_KEY not set!"}`);
-  console.log(`📊 Sheet: "${config.GOOGLE_SHEET_NAME}" (${config.GOOGLE_SHEET_ID})`);
+    if (!providedKey || providedKey !== config.MCP_KEY) {
+      reply.code(401).send(AUTH_ERROR);
+      return;
+    }
+  };
+
+  // xmcp MCP endpoint
+  app.get("/mcp", { preHandler: mcpAuthGuard }, xmcpHandler as any);
+  app.post("/mcp", { preHandler: mcpAuthGuard }, xmcpHandler as any);
+
+  await app.listen({ port: config.PORT, host: config.HOST });
+
+  logger.info(
+    `🚀 Catatan Keuangan MCP Server running on http://${config.HOST}:${config.PORT}/mcp`,
+  );
+  logger.info(`🔒 Authentication: ${config.MCP_KEY ? "enabled" : "MCP_KEY not set!"}`);
+  logger.info(`📊 Sheet: "${config.GOOGLE_SHEET_NAME}" (${config.GOOGLE_SHEET_ID})`);
 }
 
 main().catch((err) => {

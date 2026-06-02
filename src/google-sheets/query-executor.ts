@@ -1,8 +1,9 @@
 import { GoogleSheetsClient } from "./client";
-import { AppConfig } from "../config";
+import type { AppConfig } from "../config";
 import { logger } from "../utils/logger";
 import { queryError, tempSheetError, tempSheetCleanupWarning } from "../utils/errors";
-import { COLUMN_LETTERS, ColumnMeta } from "./types";
+import { COLUMN_LETTERS } from "./types";
+import type { ColumnMeta } from "./types";
 
 export interface QueryResult {
   success: boolean;
@@ -84,7 +85,7 @@ export class QueryExecutor {
 
       // 4. Build structured response
       const rows = result.values;
-      const headers = rows.length > 0 ? rows[0] : [];
+      const headers = rows[0] ?? [];
       const dataRows = rows.length > 1 ? rows.slice(1) : [];
       return {
         success: true,
@@ -114,7 +115,7 @@ export class QueryExecutor {
     const headerValues = await this.client.getRows(`A1:T1`);
     const dataValues = await this.client.getRows(`A2:T10`);
 
-    const headers = headerValues.length > 0 ? headerValues[0] : [];
+    const headers = headerValues[0] ?? [];
 
     // Get total row count
     const allData = await this.client.getRows(`A2:T`);

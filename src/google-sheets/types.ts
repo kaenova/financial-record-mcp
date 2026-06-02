@@ -178,7 +178,11 @@ export function rowToRecord(row: string[]): Record<string, string> {
   ];
   const record: Record<string, string> = {};
   for (let i = 0; i < Math.min(row.length, labels.length); i++) {
-    if (row[i]) record[labels[i]] = row[i];
+    const label = labels[i];
+    const value = row[i];
+    if (label && value) {
+      record[label] = value;
+    }
   }
   return record;
 }

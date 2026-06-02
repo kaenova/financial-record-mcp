@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build ./src/index.ts --target=bun --outdir=./dist",
+    "dev": "bun run build && bun run start",
+    "build": "xmcp build && bun build ./src/index.ts --target=bun --outdir=./dist",
     "start": "bun run ./dist/index.js",
     "docker:build": "docker build -t catatan-keuangan-mcp .",
     "docker:run": "docker compose up"
@@ -17,9 +17,9 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "fastify": "^5.0.0",
     "googleapis": "^171.4.0",
-    "hono": "^4.12.18",
-    "mcp-lite": "^0.10.0",
+    "xmcp": "^0.6.10",
     "zod": "^4.4.3"
   }
 }

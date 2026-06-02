@@ -4,7 +4,7 @@ import {
   HEADER_ROW,
   buildRow,
   rowToRecord,
-  RecordInput,
+  type RecordInput,
   COLUMN_COUNT,
 } from "./types";
 import { notFoundError } from "../utils/errors";
@@ -74,6 +74,9 @@ export class GoogleSheetsRepository {
     }
 
     const currentRow = data[0];
+    if (!currentRow) {
+      throw notFoundError(rowNumber, 0);
+    }
     // Map field names to column indices and merge
     const mergedRow = this.mergeFields(currentRow, partialFields);
 

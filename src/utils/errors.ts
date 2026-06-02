@@ -1,11 +1,28 @@
-import { RpcError } from "mcp-lite";
+/**
+ * Minimal JSON-RPC-ish error type compatible with our MCP server.
+ *
+ * We used to depend on `mcp-lite`'s `RpcError`. After migrating to xmcp,
+ * we keep the same factory functions but implement the error type locally
+ * to avoid the `mcp-lite` dependency.
+ */
+export class RpcError extends Error {
+  public readonly code: number;
+
+  constructor(code: number, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
 
 export function unauthorizedError(): RpcError {
   return new RpcError(-32000, "Unauthorized: invalid or missing API key");
 }
 
 export function notFoundError(row: number, totalRows: number): RpcError {
-  return new RpcError(-32000, `Record not found at row ${row}. Sheet has ${totalRows} rows of data.`);
+  return new RpcError(
+    -32000,
+    `Record not found at row ${row}. Sheet has ${totalRows} rows of data.`,
+  );
 }
 
 export function queryError(message: string): RpcError {
@@ -25,5 +42,8 @@ export function authError(): RpcError {
 }
 
 export function tempSheetCleanupWarning(): RpcError {
-  return new RpcError(-32004, "Warning: failed to clean up temporary sheet. Manual cleanup may be needed.");
+  return new RpcError(
+    -32004,
+    "Warning: failed to clean up temporary sheet. Manual cleanup may be needed.",
+  );
 }

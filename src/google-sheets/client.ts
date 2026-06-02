@@ -1,5 +1,6 @@
-import { google, sheets_v4 } from "googleapis";
-import { config, AppConfig } from "../config";
+import { google } from "googleapis";
+import { config } from "../config";
+import type { AppConfig } from "../config";
 import { logger } from "../utils/logger";
 import { authError } from "../utils/errors";
 
@@ -14,7 +15,7 @@ export interface CreateSheetResult {
 }
 
 export class GoogleSheetsClient {
-  private readonly sheets: sheets_v4.Resource$Spreadsheets;
+  private readonly sheets: ReturnType<typeof google.sheets>;
   private readonly sheetId: string;
   private readonly sheetName: string;
 

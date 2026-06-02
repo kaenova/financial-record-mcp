@@ -14,6 +14,12 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // xmcp adapter path mapping (generated into .xmcp/ by `xmcp build`)
+    "baseUrl": ".",
+    "paths": {
+      "@xmcp/*": ["./.xmcp/*"]
+    },
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,
@@ -25,5 +31,13 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+
+  "include": [
+    "src/**/*",
+    "xmcp.config.ts",
+    "xmcp-env.d.ts",
+    "xmcp-shims.d.ts",
+    ".xmcp/**/*"
+  ]
 }
